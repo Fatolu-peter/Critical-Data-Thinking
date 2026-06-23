@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beyond Dashboards — Peter Fatolu</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050A14;
+    --bg2: #0A1628;
+    --bg3: #0F1E3A;
+    --card: #0D1B33;
+    --cyan: #00D4FF;
+    --violet: #7B2FBE;
+    --gold: #FFB800;
+    --green: #00FF88;
+    --text: #E8F0FE;
+    --muted: #7A8CA8;
+    --border: rgba(0,212,255,0.15);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; overflow-x:hidden; }
+
+  /* NAV */
+  nav { position:fixed; top:0; left:0; right:0; z-index:1000; padding:14px 40px; display:flex; align-items:center; justify-content:space-between; background:rgba(5,10,20,0.9); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); }
+  .nav-logo { font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:600; letter-spacing:2px; color:var(--cyan); text-transform:uppercase; }
+  .nav-links { display:flex; gap:24px; list-style:none; }
+  .nav-links a { font-size:11px; font-weight:500; letter-spacing:1px; color:var(--muted); text-decoration:none; text-transform:uppercase; transition:color .3s; }
+  .nav-links a:hover { color:var(--cyan); }
+  .nav-tag { font-size:11px; font-weight:600; background:linear-gradient(135deg,var(--cyan),var(--violet)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:1px; }
+
+  /* PROGRESS */
+  #progress { position:fixed; top:0; left:0; height:2px; background:linear-gradient(90deg,var(--cyan),var(--violet)); z-index:2000; transition:width .1s; box-shadow:0 0 8px rgba(0,212,255,.6); }
+
+  /* HERO */
+  #hero { position:relative; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:120px 40px 80px; overflow:hidden; }
+  #hero-canvas { position:absolute; inset:0; pointer-events:none; }
+  .hero-eyebrow { display:inline-flex; align-items:center; gap:8px; background:rgba(0,212,255,.08); border:1px solid rgba(0,212,255,.25); border-radius:100px; padding:6px 18px; font-size:11px; font-weight:600; letter-spacing:2px; color:var(--cyan); text-transform:uppercase; margin-bottom:36px; animation:fadeInDown .8s ease both; }
+  .hero-eyebrow .dot { width:6px; height:6px; border-radius:50%; background:var(--cyan); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+  .hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(34px,5.5vw,72px); font-weight:700; line-height:1.08; letter-spacing:-1.5px; max-width:900px; margin-bottom:24px; animation:fadeInUp .9s .2s ease both; }
+  .hero-title .accent { color:var(--cyan); }
+  .hero-title .accent2 { color:var(--gold); }
+  .hero-sub { font-size:clamp(14px,1.8vw,18px); color:var(--muted); line-height:1.7; max-width:620px; margin-bottom:48px; animation:fadeInUp .9s .35s ease both; }
+  .hero-cta { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-bottom:64px; animation:fadeInUp .9s .5s ease both; }
+  .btn-primary { padding:14px 30px; background:linear-gradient(135deg,var(--cyan),var(--violet)); color:#fff; font-weight:600; font-size:14px; border:none; border-radius:8px; cursor:pointer; text-decoration:none; transition:transform .2s,box-shadow .3s; box-shadow:0 0 30px rgba(0,212,255,.25); }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 0 50px rgba(0,212,255,.4); }
+  .btn-outline { padding:14px 30px; background:transparent; color:var(--text); font-weight:500; font-size:14px; border:1px solid var(--border); border-radius:8px; cursor:pointer; text-decoration:none; transition:border-color .3s,background .3s; }
+  .btn-outline:hover { border-color:var(--cyan); background:rgba(0,212,255,.05); }
+
+
+
+  
+  /* SPEAKER CARD WITH REAL PHOTO */
+  .speaker-card { display:inline-flex; align-items:center; gap:20px; background:rgba(13,27,51,.85); border:1px solid var(--border); border-radius:20px; padding:18px 28px; backdrop-filter:blur(10px); animation:fadeInUp .9s .65s ease both; }
+  .speaker-photo-wrap { position:relative; flex-shrink:0; }
+  .speaker-photo { width:80px; height:80px; border-radius:50%; object-fit:cover; object-position:center top; display:block; position:relative; z-index:1; }
+  .speaker-photo-ring { position:absolute; inset:-4px; border-radius:50%; background:conic-gradient(var(--cyan),var(--violet),var(--gold),var(--cyan)); z-index:0; animation:rotate 5s linear infinite; opacity:.85; }
+  .speaker-photo-inner { position:absolute; inset:-2px; border-radius:50%; background:var(--bg); z-index:0; }
+  @keyframes rotate { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  .speaker-info { text-align:left; }
+  .speaker-name { font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; margin-bottom:4px; }
+  .speaker-roles { font-size:12px; color:var(--muted); line-height:1.5; }
+  .speaker-roles span { color:var(--cyan); font-weight:500; }
+
+  /* SECTIONS */
+  .section-wrap { padding:100px 40px; max-width:1200px; margin:0 auto; }
+  .section-full-bg { background:var(--bg2); }
+  .section-full-bg2 { background:var(--bg3); }
+  .slide-number { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--cyan); letter-spacing:2px; margin-bottom:12px; display:block; text-transform:uppercase; }
+  .section-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(26px,4vw,50px); font-weight:700; letter-spacing:-1px; line-height:1.1; margin-bottom:16px; }
+  .section-sub { font-size:16px; color:var(--muted); line-height:1.7; max-width:600px; margin-bottom:56px; }
+  .divider { height:1px; background:linear-gradient(90deg,transparent,var(--border),transparent); max-width:1200px; margin:0 auto; }
+
+  /* ANIMATIONS */
+  @keyframes fadeInDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeInUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+  .reveal { opacity:0; transform:translateY(40px); transition:opacity .7s ease,transform .7s ease; }
+  .reveal.visible { opacity:1; transform:translateY(0); }
+  .reveal-left { opacity:0; transform:translateX(-40px); transition:opacity .7s ease,transform .7s ease; }
+  .reveal-left.visible { opacity:1; transform:translateX(0); }
+  .reveal-right { opacity:0; transform:translateX(40px); transition:opacity .7s ease,transform .7s ease; }
+  .reveal-right.visible { opacity:1; transform:translateX(0); }
+
+  /* DASHBOARD TRAP */
+  .trap-grid { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:start; }
+  .scenario-box { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:20px; }
+  .scenario-label { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; }
+  .silence-box { background:linear-gradient(135deg,rgba(123,47,190,.15),rgba(0,212,255,.05)); border:1px solid rgba(123,47,190,.3); border-radius:12px; padding:18px 24px; font-size:30px; letter-spacing:4px; text-align:center; margin:14px 0; color:rgba(255,255,255,.2); }
+  .ceo-question { background:rgba(255,184,0,.08); border-left:3px solid var(--gold); border-radius:0 12px 12px 0; padding:18px 22px; font-size:19px; font-weight:600; font-family:'Space Grotesk',sans-serif; color:var(--gold); }
+  .insight-compare { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:36px; }
+  .insight-card { border-radius:12px; padding:18px; font-size:13px; line-height:1.6; }
+  .insight-card.bad { background:rgba(255,80,80,.08); border:1px solid rgba(255,80,80,.2); }
+  .insight-card.good { background:rgba(0,255,136,.06); border:1px solid rgba(0,255,136,.2); }
+  .insight-card .label { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+  .insight-card.bad .label { color:#FF5050; }
+  .insight-card.good .label { color:var(--green); }
+
+  /* BOARDROOM 3D CARTOON */
+  .boardroom-cartoon { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:32px 24px; text-align:center; position:relative; overflow:hidden; }
+  .boardroom-cartoon::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 0%,rgba(123,47,190,.18) 0%,transparent 70%); }
+  .screen-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+  .mini-chart { background:rgba(0,212,255,.06); border:1px solid rgba(0,212,255,.15); border-radius:8px; padding:14px 10px; }
+  .bar-group { display:flex; align-items:flex-end; gap:4px; height:44px; }
+  .bar { flex:1; border-radius:3px 3px 0 0; background:linear-gradient(to top,var(--cyan),rgba(0,212,255,.3)); transition:height 1s ease; }
+
+  /* TIMELINE */
+  .timeline { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+  .timeline-card { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:32px 26px; position:relative; overflow:hidden; transition:transform .3s,border-color .3s,box-shadow .3s; }
+  .timeline-card:hover { transform:translateY(-6px); border-color:var(--cyan); box-shadow:0 20px 60px rgba(0,212,255,.12); }
+  .timeline-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:20px 20px 0 0; }
+  .timeline-card.beginner::before { background:linear-gradient(90deg,#666,#999); }
+  .timeline-card.advanced::before { background:linear-gradient(90deg,var(--violet),var(--cyan)); }
+  .timeline-card.elite::before { background:linear-gradient(90deg,var(--gold),var(--green)); }
+  .tier-badge { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; padding:4px 12px; border-radius:100px; margin-bottom:18px; display:inline-block; }
+  .beginner .tier-badge { background:rgba(150,150,150,.15); color:#999; }
+  .advanced .tier-badge { background:rgba(123,47,190,.2); color:#BC7FFF; }
+  .elite .tier-badge { background:rgba(255,184,0,.15); color:var(--gold); }
+  .tier-title { font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:700; margin-bottom:18px; }
+  .tier-skills { list-style:none; }
+  .tier-skills li { display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--muted); line-height:1.5; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+  .tier-skills li:last-child { border:none; }
+
+  /* TOOLS */
+  .tools-layout { display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; }
+  .tool-stack { display:flex; flex-direction:column; gap:10px; }
+  .tool-row { display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 22px; transition:border-color .3s; }
+  .tool-row:hover { border-color:var(--cyan); }
+  .tool-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .tool-name { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; flex:1; }
+  .tool-role { font-size:12px; color:var(--muted); }
+  .vs-divider { display:flex; align-items:center; gap:14px; padding:8px 0; }
+  .vs-divider::before,.vs-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+  .vs-text { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:2px; }
+  .thinking-card { background:linear-gradient(135deg,rgba(0,212,255,.1),rgba(123,47,190,.1)); border:1px solid rgba(0,212,255,.3); border-radius:12px; padding:20px 22px; display:flex; align-items:center; gap:14px; }
+  .thinking-icon { width:46px; height:46px; border-radius:12px; background:linear-gradient(135deg,var(--cyan),var(--violet)); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+  .thinking-label { font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:700; }
+  .thinking-result { font-size:12px; color:var(--green); font-weight:600; margin-top:4px; }
+  .quote-block { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:44px; text-align:center; }
+  .quote-mark { font-size:72px; line-height:.5; font-family:Georgia,serif; color:var(--cyan); opacity:.4; display:block; margin-bottom:28px; }
+  .quote-text { font-family:'Space Grotesk',sans-serif; font-size:clamp(16px,2.2vw,24px); font-weight:600; line-height:1.5; margin-bottom:20px; }
+  .quote-source { font-size:12px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+
+  /* 5 SKILLS */
+  .skills-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+  .skill-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:26px 18px; text-align:center; transition:transform .3s,border-color .3s,box-shadow .3s; cursor:default; }
+  .skill-card:hover { transform:translateY(-8px); }
+  .skill-card:nth-child(1):hover { border-color:var(--cyan); box-shadow:0 24px 60px rgba(0,212,255,.15); }
+  .skill-card:nth-child(2):hover { border-color:var(--violet); box-shadow:0 24px 60px rgba(123,47,190,.2); }
+  .skill-card:nth-child(3):hover { border-color:var(--gold); box-shadow:0 24px 60px rgba(255,184,0,.15); }
+  .skill-card:nth-child(4):hover { border-color:var(--green); box-shadow:0 24px 60px rgba(0,255,136,.12); }
+  .skill-card:nth-child(5):hover { border-color:#FF6B6B; box-shadow:0 24px 60px rgba(255,107,107,.12); }
+  .skill-num { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:2px; display:block; margin-bottom:14px; }
+  .skill-icon-wrap { width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:24px; margin:0 auto 14px; }
+  .skill-card:nth-child(1) .skill-icon-wrap{background:rgba(0,212,255,.12)}
+  .skill-card:nth-child(2) .skill-icon-wrap{background:rgba(123,47,190,.15)}
+  .skill-card:nth-child(3) .skill-icon-wrap{background:rgba(255,184,0,.12)}
+  .skill-card:nth-child(4) .skill-icon-wrap{background:rgba(0,255,136,.1)}
+  .skill-card:nth-child(5) .skill-icon-wrap{background:rgba(255,107,107,.1)}
+  .skill-name { font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:700; margin-bottom:10px; }
+  .skill-desc { font-size:12px; color:var(--muted); line-height:1.6; }
+  .skill-example { margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,.06); font-size:11px; color:var(--muted); font-style:italic; line-height:1.5; }
+
+  /* PIPELINE */
+  .pipeline-section { display:grid; grid-template-columns:1fr 1fr; gap:72px; align-items:center; }
+  .pipeline { display:flex; flex-direction:column; align-items:center; gap:0; }
+  .pipe-step { width:100%; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px 26px; display:flex; align-items:center; gap:14px; transition:border-color .3s,background .3s; cursor:default; }
+  .pipe-step:hover { background:rgba(0,212,255,.05); border-color:var(--cyan); }
+  .pipe-step.active { border-color:var(--cyan); background:rgba(0,212,255,.06); }
+  .pipe-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; background:rgba(0,212,255,.1); }
+  .pipe-label { font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; }
+  .pipe-desc { font-size:11px; color:var(--muted); margin-top:3px; }
+  .pipe-connector { width:2px; height:24px; background:linear-gradient(to bottom,var(--cyan),rgba(0,212,255,.2)); position:relative; }
+  .pipe-connector::after { content:'▼'; position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--cyan); }
+  .impact-cards { display:flex; flex-direction:column; gap:14px; }
+  .impact-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px 22px; display:flex; gap:14px; align-items:flex-start; transition:transform .2s,border-color .3s; }
+  .impact-card:hover { transform:translateX(6px); border-color:var(--cyan); }
+  .impact-badge { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .impact-title { font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px; margin-bottom:3px; }
+  .impact-detail { font-size:12px; color:var(--muted); line-height:1.5; }
+  .impact-stat { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--cyan); margin-top:5px; font-weight:500; }
+
+  /* CASE STUDY */
+  .case-header { background:linear-gradient(135deg,rgba(255,80,80,.08),rgba(255,184,0,.05)); border:1px solid rgba(255,80,80,.2); border-radius:16px; padding:26px 32px; margin-bottom:36px; text-align:center; }
+  .case-label { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#FF5050; font-weight:600; margin-bottom:10px; }
+  .case-comparison { display:grid; grid-template-columns:1fr 80px 1fr; gap:20px; align-items:start; }
+  .analyst-box { border-radius:16px; padding:28px; }
+  .analyst-box.basic { background:rgba(255,80,80,.06); border:1px solid rgba(255,80,80,.2); }
+  .analyst-box.problem { background:rgba(0,255,136,.05); border:1px solid rgba(0,255,136,.2); }
+  .analyst-type { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; }
+  .basic .analyst-type { color:#FF5050; }
+  .problem .analyst-type { color:var(--green); }
+  .analyst-says { font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600; margin-bottom:14px; line-height:1.4; }
+  .analyst-questions { list-style:none; }
+  .analyst-questions li { display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--muted); line-height:1.5; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+  .analyst-questions li:last-child { border:none; }
+  .q-mark { color:var(--cyan); font-weight:700; font-size:15px; }
+  .vs-center { display:flex; flex-direction:column; align-items:center; justify-content:center; padding-top:56px; }
+  .vs-circle { width:60px; height:60px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:17px; color:var(--muted); }
+
+  /* BIG COMPANIES SECTION */
+  .companies-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .company-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px 24px; position:relative; overflow:hidden; transition:transform .3s,border-color .3s,box-shadow .3s; }
+  .company-card:hover { transform:translateY(-5px); box-shadow:0 20px 50px rgba(0,0,0,.4); }
+  .company-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+  .company-card.amazon::before { background:linear-gradient(90deg,#FF9900,#FFB800); }
+  .company-card.google::before { background:linear-gradient(90deg,#4285F4,#34A853,#FBBC05,#EA4335); }
+  .company-card.netflix::before { background:linear-gradient(90deg,#E50914,#FF5733); }
+  .company-card.uber::before { background:linear-gradient(90deg,#000,#555); }
+  .company-card.spotify::before { background:linear-gradient(90deg,#1DB954,#1ED760); }
+  .company-card.meta::before { background:linear-gradient(90deg,#0668E1,#00B2FF); }
+  .company-logo { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; margin-bottom:6px; }
+  .company-logo.amazon { color:#FF9900; }
+  .company-logo.google { background:linear-gradient(90deg,#4285F4,#EA4335); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .company-logo.netflix { color:#E50914; }
+  .company-logo.uber { color:#fff; }
+  .company-logo.spotify { color:#1DB954; }
+  .company-logo.meta { color:#0668E1; }
+  .company-domain { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+  .company-insight { font-size:13px; line-height:1.6; color:var(--muted); margin-bottom:14px; }
+  .company-stat { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; padding:8px 12px; border-radius:6px; display:inline-block; }
+  .company-stat.amazon { background:rgba(255,153,0,.12); color:#FF9900; }
+  .company-stat.google { background:rgba(66,133,244,.12); color:#4285F4; }
+  .company-stat.netflix { background:rgba(229,9,20,.12); color:#E50914; }
+  .company-stat.uber { background:rgba(255,255,255,.08); color:#fff; }
+  .company-stat.spotify { background:rgba(29,185,84,.12); color:#1DB954; }
+  .company-stat.meta { background:rgba(6,104,225,.12); color:#0668E1; }
+  .company-question { margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,.05); font-size:12px; color:var(--cyan); font-style:italic; }
+
+  /* 3D CARTOON CRITICAL THINKING */
+  .cartoon-section { display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; }
+  .cartoon-wrap { position:relative; }
+
+  /* FUTURE */
+  .future-layout { display:grid; grid-template-columns:1.2fr 1fr; gap:56px; align-items:center; }
+  .formula-box { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:36px; margin-bottom:28px; }
+  .formula-label { font-size:11px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:18px; }
+  .formula-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .formula-item { padding:7px 14px; border-radius:8px; font-size:13px; }
+  .formula-item.data{background:rgba(0,212,255,.12);color:var(--cyan)}
+  .formula-item.biz{background:rgba(123,47,190,.15);color:#BC7FFF}
+  .formula-item.creative{background:rgba(255,184,0,.12);color:var(--gold)}
+  .formula-item.comm{background:rgba(0,255,136,.1);color:var(--green)}
+  .formula-plus { color:var(--muted); font-size:18px; font-weight:300; }
+  .formula-result { display:flex; align-items:center; gap:12px; padding:14px 18px; background:linear-gradient(135deg,rgba(0,212,255,.1),rgba(123,47,190,.1)); border:1px solid rgba(0,212,255,.25); border-radius:10px; margin-top:16px; font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; }
+  .career-paths { display:flex; flex-direction:column; gap:10px; }
+  .career-item { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 22px; display:flex; align-items:center; gap:14px; transition:border-color .3s,transform .2s; cursor:default; }
+  .career-item:hover { border-color:var(--cyan); transform:translateX(6px); }
+  .career-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .career-name { font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; flex:1; }
+  .career-arrow { font-size:12px; color:var(--cyan); opacity:0; transition:opacity .2s; }
+  .career-item:hover .career-arrow { opacity:1; }
+
+  /* FINAL */
+  #final { text-align:center; padding:100px 40px 120px; background:var(--bg); position:relative; overflow:hidden; }
+  #final::before { content:''; position:absolute; top:-200px; left:50%; transform:translateX(-50%); width:800px; height:800px; border-radius:50%; background:radial-gradient(circle,rgba(123,47,190,.15) 0%,transparent 60%); pointer-events:none; }
+  .challenge-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(26px,5vw,58px); font-weight:700; line-height:1.1; letter-spacing:-1px; margin:0 auto 28px; max-width:800px; }
+  .challenge-lines { font-size:clamp(15px,2vw,21px); color:var(--muted); line-height:1.7; max-width:660px; margin:0 auto 56px; }
+  .challenge-lines em { color:var(--cyan); font-style:normal; font-weight:600; }
+  .speaker-final { display:inline-flex; flex-direction:column; align-items:center; gap:18px; background:var(--card); border:1px solid var(--border); border-radius:24px; padding:36px 56px; margin-bottom:48px; }
+  .speaker-final-photo-wrap { position:relative; }
+  .speaker-final-photo { width:100px; height:100px; border-radius:50%; object-fit:cover; object-position:center top; display:block; position:relative; z-index:1; box-shadow:0 0 40px rgba(0,212,255,.3); }
+  .speaker-final-ring { position:absolute; inset:-5px; border-radius:50%; background:conic-gradient(var(--cyan),var(--violet),var(--gold),var(--cyan)); z-index:0; animation:rotate 5s linear infinite; opacity:.75; }
+  .speaker-final-inner { position:absolute; inset:-2px; border-radius:50%; background:var(--bg); z-index:0; }
+  .speaker-final-name { font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700; }
+  .speaker-final-roles { font-size:13px; color:var(--muted); line-height:1.6; text-align:center; }
+  .social-links { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .social-btn { display:flex; align-items:center; gap:8px; padding:11px 20px; background:var(--card); border:1px solid var(--border); border-radius:10px; text-decoration:none; color:var(--text); font-size:13px; font-weight:500; transition:border-color .3s,background .3s,transform .2s; }
+  .social-btn:hover { border-color:var(--cyan); background:rgba(0,212,255,.05); transform:translateY(-2px); }
+
+  /* SCROLL */
+  .scroll-indicator { position:absolute; bottom:36px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:8px; animation:fadeInUp 1s 1s ease both; }
+  .scroll-indicator span { font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; }
+  .scroll-mouse { width:22px; height:34px; border:2px solid var(--muted); border-radius:11px; display:flex; justify-content:center; padding-top:5px; }
+  .scroll-dot { width:3px; height:8px; background:var(--cyan); border-radius:2px; animation:scrollDown 1.5s infinite; }
+  @keyframes scrollDown { 0%{transform:translateY(0);opacity:1} 100%{transform:translateY(10px);opacity:0} }
+
+  footer { text-align:center; padding:22px 40px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); }
+  footer span { color:var(--cyan); }
+
+  /* RESPONSIVE */
+  @media(max-width:900px){
+    nav{padding:14px 20px}
+    .nav-links{display:none}
+    .section-wrap{padding:70px 24px}
+    .trap-grid{grid-template-columns:1fr;gap:36px}
+    .timeline{grid-template-columns:1fr}
+    .tools-layout{grid-template-columns:1fr;gap:36px}
+    .skills-grid{grid-template-columns:repeat(2,1fr)}
+    .pipeline-section{grid-template-columns:1fr;gap:36px}
+    .case-comparison{grid-template-columns:1fr}
+    .vs-center{display:none}
+    .future-layout{grid-template-columns:1fr}
+    .companies-grid{grid-template-columns:1fr}
+    .cartoon-section{grid-template-columns:1fr}
+    .insight-compare{grid-template-columns:1fr}
+    .speaker-card{flex-direction:column;text-align:center}
+    .speaker-info{text-align:center}
+    .speaker-final{padding:28px 20px}
+  }
+  @media(max-width:540px){
+    .skills-grid{grid-template-columns:1fr}
+    .hero-cta{flex-direction:column;align-items:center}
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo">⬡ Emperor Data Analytics</span>
+  <ul class="nav-links">
+    <li><a href="#trap">The Trap</a></li>
+    <li><a href="#evolution">Evolution</a></li>
+    <li><a href="#skills">5 Skills</a></li>
+    <li><a href="#companies">Big Companies</a></li>
+    <li><a href="#pipeline">Pipeline</a></li>
+    <li><a href="#case">Case Study</a></li>
+    <li><a href="#challenge">Challenge</a></li>
+  </ul>
+  <span class="nav-tag">LIVE SESSION</span>
+</nav>
+
+<!-- HERO -->
+<div id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-eyebrow"><span class="dot"></span>Speaking Session · Data Analytics</div>
+  <h1 class="hero-title">Beyond <span class="accent">Dashboards:</span><br>The Mindset That Turns<br>Analysts Into <span class="accent2">Problem Solvers</span></h1>
+  <p class="hero-sub">Building analysts who don't just report what happened — but explain <em>why</em> it happened and <em>what businesses should do next.</em></p>
+  <div class="hero-cta">
+    <a href="#trap" class="btn-primary">Begin the Journey →</a>
+    <a href="#challenge" class="btn-outline">Jump to Challenge</a>
+  </div>
+  <div class="speaker-card">
+    <div class="speaker-photo-wrap">
+      <div class="speaker-photo-ring"></div>
+      <div class="speaker-photo-inner"></div>
+      <img class="speaker-photo" src="peter.png" alt="Peter Fatolu" />
+    </div>
+    <div class="speaker-info">
+      <div class="speaker-name">Peter Fatolu</div>
+      <div class="speaker-roles"><span>Data Scientist</span> · <span>Data Analyst</span> · <span>Data Engineer</span> · <span>Trainer</span><br><span style="color:var(--muted)">Emperor Data Analytics</span></div>
+    </div>
+  </div>
+  <div class="scroll-indicator">
+    <div class="scroll-mouse"><div class="scroll-dot"></div></div>
+    <span>Scroll to explore</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SLIDE 1: DASHBOARD TRAP -->
+<div class="section-full-bg" id="trap">
+<div class="section-wrap">
+  <div class="reveal">
+    <span class="slide-number">SECTION 01 · THE PROBLEM</span>
+    <h2 class="section-title">The <span style="color:var(--cyan)">Dashboard</span> Trap</h2>
+    <p class="section-sub">A story every analyst needs to hear — before it happens to them in a boardroom.</p>
+  </div>
+  <div class="trap-grid">
+    <div class="reveal-left">
+      <div class="scenario-box">
+        <div class="scenario-label">📊 The Scene</div>
+        <div style="font-size:16px;line-height:1.6;font-family:'Space Grotesk',sans-serif">Imagine presenting your dashboard to the CEO. Charts are perfect. Colors are clean. Every metric is on screen.</div>
+      </div>
+      <div class="silence-box">. . .</div>
+      <div class="ceo-question">"So... what should we do?"</div>
+      <div class="insight-compare">
+        <div class="insight-card bad"><div class="label">❌ Information</div>Tools give you data.<br>Charts show numbers.<br>Reports describe the past.</div>
+        <div class="insight-card good"><div class="label">✅ Direction</div>Thinking drives action.<br>Insight explains context.<br>Solutions change outcomes.</div>
+      </div>
+    </div>
+    <div class="boardroom-cartoon reveal-right">
+      <!-- 3D Cartoon: CEO Boardroom Scene -->
+      <svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;border-radius:16px">
+        <defs>
+          <linearGradient id="roomGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0D1B33"/><stop offset="100%" stop-color="#050A14"/></linearGradient>
+          <linearGradient id="tableGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1A3A6A"/><stop offset="100%" stop-color="#0D2040"/></linearGradient>
+          <linearGradient id="screenGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0A2040"/><stop offset="100%" stop-color="#051020"/></linearGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <!-- Room background -->
+        <rect width="400" height="320" fill="url(#roomGrad)"/>
+        <!-- Floor perspective lines -->
+        <line x1="0" y1="220" x2="200" y2="160" stroke="rgba(0,212,255,0.05)" stroke-width="1"/>
+        <line x1="400" y1="220" x2="200" y2="160" stroke="rgba(0,212,255,0.05)" stroke-width="1"/>
+        <line x1="0" y1="240" x2="200" y2="165" stroke="rgba(0,212,255,0.04)" stroke-width="1"/>
+        <!-- Big screen wall -->
+        <rect x="50" y="20" width="300" height="130" rx="8" fill="url(#screenGrad)" stroke="#00D4FF" stroke-width="1.5" opacity="0.9"/>
+        <!-- Screen glow -->
+        <rect x="50" y="20" width="300" height="130" rx="8" fill="rgba(0,212,255,0.03)"/>
+        <!-- Chart on screen -->
+        <rect x="65" y="32" width="80" height="50" rx="4" fill="rgba(0,212,255,0.08)" stroke="rgba(0,212,255,0.2)" stroke-width="1"/>
+        <!-- Bar chart mini -->
+        <rect x="72" y="65" width="8" height="11" fill="#00D4FF" rx="1" opacity="0.8"/>
+        <rect x="83" y="59" width="8" height="17" fill="#00D4FF" rx="1" opacity="0.8"/>
+        <rect x="94" y="55" width="8" height="21" fill="#00D4FF" rx="1" opacity="0.8"/>
+        <rect x="105" y="50" width="8" height="26" fill="#00D4FF" rx="1" opacity="0.8"/>
+        <rect x="116" y="57" width="8" height="19" fill="#00D4FF" rx="1" opacity="0.8"/>
+        <text x="105" y="47" text-anchor="middle" fill="#00D4FF" font-size="6" opacity="0.6">REVENUE</text>
+        <!-- Line chart mini -->
+        <rect x="158" y="32" width="80" height="50" rx="4" fill="rgba(123,47,190,0.08)" stroke="rgba(123,47,190,0.2)" stroke-width="1"/>
+        <polyline points="165,73 175,65 185,68 195,58 205,62 215,52 225,56" fill="none" stroke="#BC7FFF" stroke-width="2" opacity="0.9"/>
+        <text x="198" y="47" text-anchor="middle" fill="#BC7FFF" font-size="6" opacity="0.6">GROWTH</text>
+        <!-- KPI numbers -->
+        <rect x="252" y="32" width="80" height="50" rx="4" fill="rgba(255,184,0,0.08)" stroke="rgba(255,184,0,0.2)" stroke-width="1"/>
+        <text x="292" y="56" text-anchor="middle" fill="#FFB800" font-size="18" font-weight="bold" font-family="monospace">24K</text>
+        <text x="292" y="70" text-anchor="middle" fill="#FFB800" font-size="7" opacity="0.7">↑ 12.4% USERS</text>
+        <!-- SILENCE text on screen -->
+        <text x="200" y="115" text-anchor="middle" fill="rgba(255,255,255,0.15)" font-size="24" font-weight="bold" font-family="'Space Grotesk', sans-serif" letter-spacing="8">SILENCE</text>
+        <text x="200" y="138" text-anchor="middle" fill="#FFB800" font-size="10" font-family="'Space Grotesk', sans-serif">"So... what should we do?"</text>
+        <!-- Conference table -->
+        <ellipse cx="200" cy="235" rx="160" ry="40" fill="url(#tableGrad)" stroke="rgba(0,212,255,0.2)" stroke-width="1.5"/>
+        <ellipse cx="200" cy="232" rx="155" ry="36" fill="rgba(0,30,70,0.5)"/>
+        <!-- CEO cartoon figure (center) - 3D style -->
+        <ellipse cx="200" cy="198" rx="18" ry="18" fill="#C8956C"/>
+        <ellipse cx="200" cy="196" rx="14" ry="14" fill="#E8B48C"/>
+        <!-- CEO hair -->
+        <path d="M186 190 Q200 178 214 190" fill="#2C1A0E" stroke="none"/>
+        <!-- CEO suit -->
+        <rect x="184" y="214" width="32" height="28" rx="4" fill="#1A2A4A"/>
+        <rect x="197" y="214" width="6" height="28" rx="1" fill="#142036"/>
+        <!-- CEO tie - red -->
+        <polygon points="200,216 203,216 202,236 200,238 198,236 197,216" fill="#CC2200"/>
+        <!-- Confused expression -->
+        <ellipse cx="195" cy="196" rx="2" ry="2" fill="#3A2010"/>
+        <ellipse cx="205" cy="196" rx="2" ry="2" fill="#3A2010"/>
+        <path d="M196 204 Q200 201 204 204" fill="none" stroke="#8B5A3C" stroke-width="1.5"/>
+        <!-- Question mark bubble -->
+        <ellipse cx="225" cy="178" rx="14" ry="12" fill="rgba(255,184,0,0.15)" stroke="#FFB800" stroke-width="1.5"/>
+        <text x="225" y="183" text-anchor="middle" fill="#FFB800" font-size="14" font-weight="bold">?</text>
+        <!-- Analyst figure (left) -->
+        <ellipse cx="130" cy="200" rx="14" ry="14" fill="#6B4423"/>
+        <ellipse cx="130" cy="198" rx="11" ry="11" fill="#8B5E34"/>
+        <!-- Analyst hair (short) -->
+        <path d="M119 193 Q130 184 141 193" fill="#1A0A02" stroke="none"/>
+        <rect x="118" y="213" width="24" height="22" rx="4" fill="#0D3A6E"/>
+        <!-- Analyst with laptop -->
+        <rect x="118" y="230" width="32" height="18" rx="2" fill="#0A2040" stroke="rgba(0,212,255,0.3)" stroke-width="1"/>
+        <rect x="120" y="232" width="28" height="14" rx="1" fill="rgba(0,212,255,0.1)"/>
+        <polyline points="122,240 126,237 130,239 134,234 138,236 142,232" fill="none" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
+        <!-- Panic sweat drop -->
+        <ellipse cx="147" cy="187" rx="3" ry="4" fill="rgba(0,212,255,0.5)"/>
+        <!-- Bottom label -->
+        <text x="200" y="290" text-anchor="middle" fill="rgba(0,212,255,0.5)" font-size="9" font-family="monospace" letter-spacing="1">CEO BOARDROOM · ANALYTICS MEETING</text>
+      </svg>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SLIDE 2: EVOLUTION -->
+<div id="evolution">
+<div class="section-wrap">
+  <div class="reveal" style="text-align:center">
+    <span class="slide-number">SECTION 02 · THE JOURNEY</span>
+    <h2 class="section-title">The Evolution of a <span style="color:var(--cyan)">Data Analyst</span></h2>
+    <p class="section-sub" style="margin:0 auto 56px">Three stages that separate those who make charts from those who change businesses.</p>
+  </div>
+  <div class="timeline reveal">
+    <div class="timeline-card beginner">
+      <div class="tier-badge">Level 01</div>
+      <div class="tier-title" style="color:#BBB">Beginner Analyst</div>
+      <ul class="tier-skills">
+        <li><span>📊</span> Creates charts and visualizations</li>
+        <li><span>📋</span> Runs scheduled reports</li>
+        <li><span>❓</span> Answers "what happened" questions</li>
+        <li><span>🔧</span> Learns tools and software</li>
+        <li><span>📁</span> Organizes and cleans data</li>
+      </ul>
+    </div>
+    <div class="timeline-card advanced">
+      <div class="tier-badge">Level 02</div>
+      <div class="tier-title" style="color:#BC7FFF">Advanced Analyst</div>
+      <ul class="tier-skills">
+        <li><span>🏢</span> Understands business context deeply</li>
+        <li><span>🔍</span> Finds patterns and anomalies</li>
+        <li><span>💡</span> Explains insights with clarity</li>
+        <li><span>🔗</span> Connects data to business goals</li>
+        <li><span>📈</span> Tracks KPIs that actually matter</li>
+      </ul>
+    </div>
+    <div class="timeline-card elite">
+      <div class="tier-badge">Level 03 · ELITE</div>
+      <div class="tier-title" style="color:var(--gold)">Elite Analyst</div>
+      <ul class="tier-skills">
+        <li><span>🔮</span> Predicts outcomes with models</li>
+        <li><span>⚡</span> Recommends clear, bold actions</li>
+        <li><span>🏆</span> Influences major decisions</li>
+        <li><span>🎯</span> Drives measurable business impact</li>
+        <li><span>🤝</span> Trusted advisor to leadership</li>
+      </ul>
+    </div>
+  </div>
+  <div class="reveal" style="margin-top:36px;text-align:center;padding:22px;background:rgba(0,212,255,.04);border:1px solid var(--border);border-radius:16px">
+    <div style="font-size:14px;color:var(--muted)">The goal of this session:</div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;margin-top:8px">Help you move from <span style="color:#999">Level 01</span> → to <span style="color:var(--gold)">Elite Level 03</span></div>
+  </div>
+</div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SLIDE 3: TOOLS + CRITICAL THINKING CARTOON -->
+<div class="section-full-bg" id="tools">
+<div class="section-wrap">
+  <div class="cartoon-section">
+    <div class="reveal-left">
+      <span class="slide-number">SECTION 03 · THE TRUTH</span>
+      <h2 class="section-title">Tools Are Important —<br>But They're <span style="color:var(--gold)">Not The Solution</span></h2>
+      <p class="section-sub" style="margin-bottom:36px">Every analyst learns tools. Only the best ones learn to think.</p>
+      <div class="tool-stack">
+        <div class="tool-row"><div class="tool-icon" style="background:rgba(255,184,0,.12)">📊</div><div class="tool-name">Power BI</div><span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">→</span><div class="tool-role">Visualization</div></div>
+        <div class="tool-row"><div class="tool-icon" style="background:rgba(0,212,255,.1)">🗄️</div><div class="tool-name">SQL</div><span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">→</span><div class="tool-role">Data Extraction</div></div>
+        <div class="tool-row"><div class="tool-icon" style="background:rgba(0,255,136,.1)">🐍</div><div class="tool-name">Python</div><span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">→</span><div class="tool-role">Automation & Modeling</div></div>
+        <div class="vs-divider"><span class="vs-text">BUT</span></div>
+        <div class="thinking-card"><div class="thinking-icon">🧠</div><div><div class="thinking-label">Critical Thinking</div><div class="thinking-result">→ Real Business Impact</div></div></div>
+      </div>
+    </div>
+    <!-- 3D Cartoon: Analyst thinking -->
+    <div class="cartoon-wrap reveal-right">
+      <svg viewBox="0 0 380 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:380px;margin:0 auto;display:block">
+        <defs>
+          <radialGradient id="bgCircle" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(123,47,190,0.15)"/>
+            <stop offset="100%" stop-color="rgba(5,10,20,0)"/>
+          </radialGradient>
+          <filter id="glow2"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <circle cx="190" cy="200" r="170" fill="url(#bgCircle)"/>
+        <!-- Floating thought bubbles with data concepts -->
+        <circle cx="80" cy="80" r="30" fill="rgba(0,212,255,0.08)" stroke="rgba(0,212,255,0.3)" stroke-width="1.5"/>
+        <text x="80" y="76" text-anchor="middle" fill="#00D4FF" font-size="10" font-family="'JetBrains Mono',monospace">WHY?</text>
+        <text x="80" y="88" text-anchor="middle" fill="#00D4FF" font-size="8" opacity="0.7">Root Cause</text>
+        <circle cx="300" cy="90" r="30" fill="rgba(255,184,0,0.08)" stroke="rgba(255,184,0,0.3)" stroke-width="1.5"/>
+        <text x="300" y="86" text-anchor="middle" fill="#FFB800" font-size="10" font-family="'JetBrains Mono',monospace">HOW?</text>
+        <text x="300" y="98" text-anchor="middle" fill="#FFB800" font-size="8" opacity="0.7">Solution</text>
+        <circle cx="55" cy="240" r="26" fill="rgba(0,255,136,0.08)" stroke="rgba(0,255,136,0.3)" stroke-width="1.5"/>
+        <text x="55" y="236" text-anchor="middle" fill="#00FF88" font-size="9" font-family="'JetBrains Mono',monospace">WHAT</text>
+        <text x="55" y="248" text-anchor="middle" fill="#00FF88" font-size="8" opacity="0.7">Impact?</text>
+        <circle cx="320" cy="250" r="26" fill="rgba(123,47,190,0.12)" stroke="rgba(123,47,190,0.35)" stroke-width="1.5"/>
+        <text x="320" y="246" text-anchor="middle" fill="#BC7FFF" font-size="9" font-family="'JetBrains Mono',monospace">WHO?</text>
+        <text x="320" y="258" text-anchor="middle" fill="#BC7FFF" font-size="8" opacity="0.7">Affected</text>
+        <!-- Connection lines from brain to bubbles -->
+        <line x1="190" y1="160" x2="105" y2="95" stroke="rgba(0,212,255,0.2)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="210" y1="160" x2="275" y2="105" stroke="rgba(255,184,0,0.2)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="170" y1="200" x2="78" y2="232" stroke="rgba(0,255,136,0.2)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="215" y1="200" x2="298" y2="240" stroke="rgba(123,47,190,0.2)" stroke-width="1" stroke-dasharray="4,4"/>
+        <!-- Giant brain glow -->
+        <ellipse cx="190" cy="175" rx="65" ry="55" fill="rgba(0,212,255,0.05)" filter="url(#glow2)"/>
+        <!-- ANALYST BODY - 3D cartoon style -->
+        <!-- Chair -->
+        <rect x="150" y="310" width="80" height="8" rx="4" fill="#1A3A6A"/>
+        <rect x="155" y="318" width="5" height="30" rx="2" fill="#0D2040"/>
+        <rect x="220" y="318" width="5" height="30" rx="2" fill="#0D2040"/>
+        <rect x="148" y="344" width="84" height="5" rx="2" fill="#1A3A6A"/>
+        <!-- Jacket/body -->
+        <rect x="162" y="270" width="56" height="50" rx="8" fill="#0D3A7A"/>
+        <!-- Shirt collar -->
+        <polygon points="185,270 195,285 180,270" fill="white" opacity="0.9"/>
+        <polygon points="195,270 195,285 210,270" fill="white" opacity="0.9"/>
+        <!-- Tie -->
+        <polygon points="191,272 194,272 195,295 190,298 185,295 186,272" fill="#CC2200"/>
+        <!-- Arms reaching forward (thinking pose) -->
+        <ellipse cx="152" cy="288" rx="10" ry="26" fill="#0D3A7A" transform="rotate(-20 152 288)"/>
+        <ellipse cx="228" cy="288" rx="10" ry="26" fill="#0D3A7A" transform="rotate(20 228 288)"/>
+        <!-- Hands -->
+        <ellipse cx="140" cy="300" rx="10" ry="8" fill="#8B5E34"/>
+        <ellipse cx="238" cy="300" rx="10" ry="8" fill="#8B5E34"/>
+        <!-- Neck -->
+        <rect x="183" y="255" width="14" height="18" rx="4" fill="#A07040"/>
+        <!-- HEAD - 3D cartoon style, large and expressive -->
+        <ellipse cx="190" cy="230" rx="42" ry="42" fill="#C8956C"/>
+        <ellipse cx="190" cy="226" rx="38" ry="38" fill="#E8B48C"/>
+        <!-- Hair - short professional -->
+        <path d="M152 218 Q190 195 228 218 Q225 205 190 198 Q155 205 152 218" fill="#1A0A02"/>
+        <!-- Ears -->
+        <ellipse cx="152" cy="228" rx="7" ry="9" fill="#D4A070"/>
+        <ellipse cx="228" cy="228" rx="7" ry="9" fill="#D4A070"/>
+        <!-- Eyes - wide, thinking look -->
+        <ellipse cx="178" cy="228" rx="7" ry="7" fill="white"/>
+        <ellipse cx="202" cy="228" rx="7" ry="7" fill="white"/>
+        <ellipse cx="179" cy="229" rx="4" ry="4" fill="#2C1A0E"/>
+        <ellipse cx="203" cy="229" rx="4" ry="4" fill="#2C1A0E"/>
+        <!-- Eye shine -->
+        <circle cx="181" cy="227" r="1.5" fill="white"/>
+        <circle cx="205" cy="227" r="1.5" fill="white"/>
+        <!-- Raised eyebrows (thinking) -->
+        <path d="M172 220 Q178 215 185 219" fill="none" stroke="#2C1A0E" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M195 219 Q202 215 208 220" fill="none" stroke="#2C1A0E" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Smile (confident) -->
+        <path d="M178 242 Q190 252 202 242" fill="none" stroke="#8B5A3C" stroke-width="2" stroke-linecap="round"/>
+        <!-- Nose -->
+        <ellipse cx="190" cy="237" rx="3" ry="2" fill="#B87050"/>
+        <!-- Brain glow on head = thinking! -->
+        <ellipse cx="190" cy="210" rx="30" ry="20" fill="rgba(0,212,255,0.06)" filter="url(#glow2)"/>
+        <!-- Mini data icons orbiting the head -->
+        <text x="140" y="185" fill="#00D4FF" font-size="16" opacity="0.8">📊</text>
+        <text x="228" y="190" fill="#FFB800" font-size="14" opacity="0.8">💡</text>
+        <text x="165" y="170" fill="#BC7FFF" font-size="12" opacity="0.7">🔍</text>
+        <!-- Label -->
+        <text x="190" y="380" text-anchor="middle" fill="rgba(0,212,255,0.5)" font-size="11" font-family="'Space Grotesk',sans-serif" font-weight="600">CRITICAL THINKING IN ACTION</text>
+      </svg>
+    </div>
+  </div>
+  <div class="reveal" style="margin-top:48px">
+    <div class="quote-block">
+      <span class="quote-mark">"</span>
+      <div class="quote-text">The best analysts are not the ones with the most tools. They are the ones who know the <span style="color:var(--cyan)">right questions to ask.</span></div>
+      <div class="quote-source">— Peter Fatolu · Emperor Data Analytics</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SLIDE 4: 5 SKILLS -->
+<div id="skills">
+<div class="section-wrap">
+  <div class="reveal" style="text-align:center">
+    <span class="slide-number">SECTION 04 · THE FRAMEWORK</span>
+    <h2 class="section-title">The 5 Skills That Separate<br><span style="color:var(--cyan)">Great Analysts</span></h2>
+    <p class="section-sub" style="margin:0 auto 56px">Master these and you become someone businesses can't afford to ignore.</p>
+  </div>
+  <div class="skills-grid reveal">
+    <div class="skill-card"><span class="skill-num">01</span><div class="skill-icon-wrap">🏢</div><div class="skill-name">Business Understanding</div><div class="skill-desc">Know the industry, the goals, and what success actually looks like before touching the data.</div><div class="skill-example">Example: Understanding that 5% churn = millions lost before building any model.</div></div>
+    <div class="skill-card"><span class="skill-num">02</span><div class="skill-icon-wrap">🧠</div><div class="skill-name">Critical Thinking</div><div class="skill-desc">Question assumptions. Validate data. Ask why — until you hit the real root cause.</div><div class="skill-example">Example: Not accepting "sales dropped" — digging into which product, region, and segment.</div></div>
+    <div class="skill-card"><span class="skill-num">03</span><div class="skill-icon-wrap">📖</div><div class="skill-name">Data Storytelling</div><div class="skill-desc">Translate numbers into narratives that non-technical stakeholders understand and act on.</div><div class="skill-example">Example: Turning a 100-slide dashboard into a 3-point brief that drives a board decision.</div></div>
+    <div class="skill-card"><span class="skill-num">04</span><div class="skill-icon-wrap">🎯</div><div class="skill-name">Problem Solving</div><div class="skill-desc">Frame the right problem before solving it. Many analysts solve the wrong problem brilliantly.</div><div class="skill-example">Example: Realizing the real problem isn't low sales — it's wrong customer targeting.</div></div>
+    <div class="skill-card"><span class="skill-num">05</span><div class="skill-icon-wrap">🗣️</div><div class="skill-name">Communication</div><div class="skill-desc">Present findings with confidence. Influence decisions. Make leadership trust your insights.</div><div class="skill-example">Example: Walking into a CEO meeting with ONE clear recommendation, not options.</div></div>
+  </div>
+</div>
+</div>
+
+<div class="divider"></div>
+
+<!-- BIG COMPANIES SECTION -->
+<div class="section-full-bg" id="companies">
+<div class="section-wrap">
+  <div class="reveal" style="text-align:center">
+    <span class="slide-number">SECTION 05 · WORLD-CLASS EXAMPLES</span>
+    <h2 class="section-title">How Big Companies Use<br><span style="color:var(--cyan)">Critical Thinking</span> in Analytics</h2>
+    <p class="section-sub" style="margin:0 auto 56px">The world's top companies don't just track metrics — they ask the right questions. This is what separates billion-dollar analytics from ordinary reporting.</p>
+  </div>
+  <div class="companies-grid">
+    <div class="company-card amazon reveal">
+      <div class="company-logo amazon">Amazon</div>
+      <div class="company-domain">E-commerce · Logistics · Cloud</div>
+      <div class="company-insight">Amazon doesn't just track cart abandonment rates. They ask: <em>"Why does each specific customer drop off at exactly this step?"</em> Their recommendation engine uses collaborative filtering across 300M+ customers — not to show what sold most, but to predict what <em>this person</em> needs next.</div>
+      <span class="company-stat amazon">35% of revenue from recommendations</span>
+      <div class="company-question">💡 Critical Q: "What does the customer want before they know they want it?"</div>
+    </div>
+    <div class="company-card google reveal">
+      <div class="company-logo google">Google</div>
+      <div class="company-domain">Search · Advertising · AI</div>
+      <div class="company-insight">Google's Project Oxygen started as an HR question: <em>"Do managers even matter?"</em> When data showed yes, they didn't just report it. They identified the exact 8 behaviors of great managers and built training programs around them. Data led to action, not just insight.</div>
+      <span class="company-stat google">+25% team effectiveness from data-driven mgmt</span>
+      <div class="company-question">💡 Critical Q: "What behaviors actually predict performance?"</div>
+    </div>
+    <div class="company-card netflix reveal">
+      <div class="company-logo netflix">Netflix</div>
+      <div class="company-domain">Streaming · Content · Personalization</div>
+      <div class="company-insight">Netflix tracks not just what you watch, but <em>when you pause, rewind, and abandon</em> shows. They used this behavioral data to commission "House of Cards" — before one frame was filmed. Pure critical thinking: using past behavior patterns to predict future content success.</div>
+      <span class="company-stat netflix">80% of content watched via recommendations</span>
+      <div class="company-question">💡 Critical Q: "What viewer behavior pattern predicts a hit?"</div>
+    </div>
+    <div class="company-card uber reveal">
+      <div class="company-logo uber">Uber</div>
+      <div class="company-domain">Mobility · Logistics · Pricing</div>
+      <div class="company-insight">Uber's surge pricing didn't start as a revenue strategy — it started as an analyst asking: <em>"Why do users get stranded during rain and events?"</em> The insight was supply/demand imbalance. The solution was dynamic pricing. One analytical question created a fundamental business model shift.</div>
+      <span class="company-stat uber">2–8× surge pricing reduces wait times by 40%</span>
+      <div class="company-question">💡 Critical Q: "Why do supply and demand gaps keep happening?"</div>
+    </div>
+    <div class="company-card spotify reveal">
+      <div class="company-logo spotify">Spotify</div>
+      <div class="company-domain">Music · Podcasts · Creator Economy</div>
+      <div class="company-insight">Spotify Wrapped isn't just a marketing campaign — it's an analytics product. By analyzing your 12 months of behavior and packaging it emotionally, they turned raw listening data into viral shareability. An analyst asked: <em>"How do we make data feel personal?"</em></div>
+      <span class="company-stat spotify">100M+ Wrapped shares in 2023</span>
+      <div class="company-question">💡 Critical Q: "How can we make users feel seen by their own data?"</div>
+    </div>
+    <div class="company-card meta reveal">
+      <div class="company-logo meta">Meta</div>
+      <div class="company-domain">Social · Advertising · VR/AR</div>
+      <div class="company-insight">Meta's News Feed algorithm doesn't optimize for "likes." An analyst discovered that <em>time spent</em> predicted advertiser value better than engagement counts. This shift — from what users say they want to what behavior shows they want — changed social media advertising forever.</div>
+      <span class="company-stat meta">17B ad revenue from behavioral signals</span>
+      <div class="company-question">💡 Critical Q: "What metric actually predicts business value?"</div>
+    </div>
+  </div>
+  <div class="reveal" style="margin-top:48px;padding:28px;background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(123,47,190,.06));border:1px solid var(--border);border-radius:16px;text-align:center">
+    <div style="font-size:14px;color:var(--muted);margin-bottom:10px">The common thread across all these companies:</div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700">They didn't just analyze data. They asked <span style="color:var(--cyan)">better questions.</span></div>
+  </div>
+</div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SLIDE 5: PIPELINE -->
+<div id="pipeline">
+<div class="section-wrap">
+  <div class="reveal">
+    <span class="slide-number">SECTION 06 · THE PROCESS</span>
+    <h2 class="section-title">From <span style="color:var(--cyan)">Data</span> to <span style="color:var(--gold)">Decision</span></h2>
+    <p class="section-sub">The transformation that happens when analytics is done right.</p>
+  </div>
+  <div class="pipeline-section">
+    <div class="reveal-left">
+      <div class="pipeline">
+        <div class="pipe-step"><div class="pipe-icon">🗂️</div><div><div class="pipe-label">Raw Data</div><div class="pipe-desc">Messy, unstructured, full of noise</div></div></div>
+        <div class="pipe-connector"></div>
+        <div class="pipe-step"><div class="pipe-icon">🔬</div><div><div class="pipe-label">Analysis</div><div class="pipe-desc">Clean, structure, explore, model</div></div></div>
+        <div class="pipe-connector"></div>
+        <div class="pipe-step"><div class="pipe-icon">💡</div><div><div class="pipe-label">Insight</div><div class="pipe-desc">The "why" that explains the pattern</div></div></div>
+        <div class="pipe-connector"></div>
+        <div class="pipe-step"><div class="pipe-icon">📋</div><div><div class="pipe-label">Recommendation</div><div class="pipe-desc">A clear, justified course of action</div></div></div>
+        <div class="pipe-connector"></div>
+        <div class="pipe-step active"><div class="pipe-icon" style="background:rgba(0,212,255,.2)">⚡</div><div><div class="pipe-label" style="color:var(--cyan)">Business Action</div><div class="pipe-desc">Real change. Measurable results.</div></div></div>
+      </div>
+    </div>
+    <div class="impact-cards reveal-right">
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:18px;color:var(--muted)">What businesses gain when analytics drives decisions:</div>
+      <div class="impact-card"><div class="impact-badge" style="background:rgba(0,255,136,.1)">💰</div><div><div class="impact-title">Revenue Growth</div><div class="impact-detail">Identify untapped customer segments, optimize pricing, and forecast demand accurately.</div><div class="impact-stat">↑ 15–40% revenue uplift in data-driven companies</div></div></div>
+      <div class="impact-card"><div class="impact-badge" style="background:rgba(0,212,255,.1)">⚙️</div><div><div class="impact-title">Operational Efficiency</div><div class="impact-detail">Eliminate waste, streamline processes, and reduce turnaround times with data.</div><div class="impact-stat">↓ 20–35% cost reduction in optimized operations</div></div></div>
+      <div class="impact-card"><div class="impact-badge" style="background:rgba(255,184,0,.1)">🎯</div><div><div class="impact-title">Smarter Decisions</div><div class="impact-detail">Replace gut feelings with evidence-backed choices at every level of the organization.</div><div class="impact-stat">5× faster decision cycles with embedded analytics</div></div></div>
+      <div class="impact-card"><div class="impact-badge" style="background:rgba(123,47,190,.15)">🛡️</div><div><div class="impact-title">Risk Reduction</div><div class="impact-detail">Detect fraud, predict failures, and identify risks before they become costly problems.</div><div class="impact-stat">↓ 60% risk exposure with predictive models</div></div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SLIDE 6: CASE STUDY -->
+<div class="section-full-bg" id="case">
+<div class="section-wrap">
+  <div class="reveal">
+    <span class="slide-number">SECTION 07 · REAL WORLD</span>
+    <h2 class="section-title">Real Business <span style="color:var(--cyan)">Scenario</span></h2>
+    <p class="section-sub">See the difference between reporting and solving in action.</p>
+  </div>
+  <div class="case-header reveal">
+    <div class="case-label">🚨 Business Problem</div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:clamp(16px,2.2vw,22px);font-weight:600">"A company notices sales have been dropping for 3 consecutive months."</div>
+  </div>
+  <div class="case-comparison">
+    <div class="analyst-box basic reveal-left">
+      <div class="analyst-type">❌ Basic Analyst</div>
+      <div class="analyst-says">"Sales decreased by 20% compared to last quarter."</div>
+      <div style="margin-top:14px;padding:12px;background:rgba(255,80,80,.06);border-radius:8px;font-size:12px;color:var(--muted)">This is <span style="color:#FF5050">reporting.</span><br>It tells leadership what they already know. It creates no action. It creates no value.</div>
+    </div>
+    <div class="vs-center"><div class="vs-circle">VS</div><div style="width:2px;height:100px;background:linear-gradient(to bottom,var(--border),transparent);margin-top:16px"></div></div>
+    <div class="analyst-box problem reveal-right">
+      <div class="analyst-type">✅ Problem-Solving Analyst</div>
+      <div class="analyst-says">"Let me find out why, where, and how to fix it."</div>
+      <ul class="analyst-questions">
+        <li><span class="q-mark">?</span> Which specific products or SKUs are underperforming?</li>
+        <li><span class="q-mark">?</span> Which locations, regions, or channels are declining?</li>
+        <li><span class="q-mark">?</span> What changed in customer behavior or segment mix?</li>
+        <li><span class="q-mark">?</span> Is this seasonal, competitive, or internal?</li>
+        <li><span class="q-mark">→</span> Here's what management should do in the next 30 days.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="reveal" style="margin-top:36px;padding:26px;background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(123,47,190,.06));border:1px solid var(--border);border-radius:16px;text-align:center">
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700">Reporting describes the past. <span style="color:var(--cyan)">Problem-solving shapes the future.</span></div>
+  </div>
+</div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SLIDE 7: FUTURE -->
+<div id="future">
+<div class="section-wrap">
+  <div class="reveal">
+    <span class="slide-number">SECTION 08 · THE OPPORTUNITY</span>
+    <h2 class="section-title">The Future of <span style="color:var(--cyan)">Data Careers</span></h2>
+    <p class="section-sub">The most valuable analysts combine technical skill with human judgment.</p>
+  </div>
+  <div class="future-layout">
+    <div class="reveal-left">
+      <div class="formula-box">
+        <div class="formula-label">The winning formula</div>
+        <div class="formula-row"><span class="formula-item data">Data Skills</span><span class="formula-plus">+</span><span class="formula-item biz">Business Thinking</span></div>
+        <div class="formula-row"><span class="formula-plus">+</span><span class="formula-item creative">Creativity</span><span class="formula-plus">+</span><span class="formula-item comm">Communication</span></div>
+        <div class="formula-result"><span>🏆</span><span>An Analyst Leaders Trust</span></div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;letter-spacing:1px;text-transform:uppercase">Why this matters now</div>
+        <div style="font-size:15px;line-height:1.7">AI automates data cleaning and visualization. The analyst who only knows tools is becoming replaceable. The analyst who understands business — who asks the right questions — becomes more valuable, not less.</div>
+        <div style="margin-top:14px;padding:12px 16px;background:rgba(0,212,255,.06);border-radius:8px;font-size:13px;color:var(--cyan)">🔮 AI handles the "what." <strong>You provide the "so what."</strong></div>
+      </div>
+    </div>
+    <div class="reveal-right">
+      <div style="margin-bottom:18px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Career Paths Open To You</div>
+      <div class="career-paths">
+        <div class="career-item"><div class="career-dot" style="background:var(--cyan)"></div><div class="career-name">Data Analyst</div><div style="font-size:12px;color:var(--muted)">Foundation role</div><div class="career-arrow">→</div></div>
+        <div class="career-item"><div class="career-dot" style="background:var(--violet)"></div><div class="career-name">Data Scientist</div><div style="font-size:12px;color:var(--muted)">ML + Prediction</div><div class="career-arrow">→</div></div>
+        <div class="career-item"><div class="career-dot" style="background:var(--gold)"></div><div class="career-name">Analytics Engineer</div><div style="font-size:12px;color:var(--muted)">Data infrastructure</div><div class="career-arrow">→</div></div>
+        <div class="career-item"><div class="career-dot" style="background:var(--green)"></div><div class="career-name">BI Specialist</div><div style="font-size:12px;color:var(--muted)">Strategic reporting</div><div class="career-arrow">→</div></div>
+        <div class="career-item"><div class="career-dot" style="background:#FF6B6B"></div><div class="career-name">AI Professional</div><div style="font-size:12px;color:var(--muted)">The frontier</div><div class="career-arrow">→</div></div>
+      </div>
+      <div style="margin-top:20px;padding:16px;background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.2);border-radius:12px">
+        <div style="font-size:13px;color:var(--gold)">⭐ All paths require the same foundation: thinking beyond the tools.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="divider"></div>
+
+<!-- FINAL CHALLENGE -->
+<div id="challenge">
+<div id="final">
+  <div class="reveal">
+    <span class="slide-number" style="display:block;margin-bottom:20px">FINAL SECTION · MY CHALLENGE TO YOU</span>
+    <h2 class="challenge-title">Don't become someone who<br><span style="color:var(--cyan)">only builds dashboards.</span></h2>
+  </div>
+  <p class="challenge-lines reveal">Become someone <em>leaders trust</em> when important decisions need to be made.<br><br>The world doesn't need more charts.<br>It needs analysts who can <em>solve real problems.</em></p>
+  <div class="speaker-final reveal">
+    <div class="speaker-final-photo-wrap">
+      <div class="speaker-final-ring"></div>
+      <div class="speaker-final-inner"></div>
+      <img class="speaker-final-photo" src="peter.png" alt="Peter Fatolu"/> 
+    </div>
+    <div class="speaker-final-name">Peter Fatolu</div>
+    <div class="speaker-final-roles">Data Scientist · Data Analyst · Data Engineer · Trainer<br><span style="color:var(--cyan);font-weight:600">Emperor Data Analytics</span></div>
+  </div>
+  <div class="social-links reveal">
+    <a href="https://linkedin.com/in/fatolu-peter-a31077306" target="_blank" class="social-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>LinkedIn</a>
+    <a href="https://twitter.com/Fatolu-peter" target="_blank" class="social-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>Twitter / X</a>
+    <a href="https://github.com/Fatolu-peter" target="_blank" class="social-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>GitHub</a>
+    <a href="https://youtube.com/@Fatolu_Peter" target="_blank" class="social-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>YouTube</a>
+    <a href="mailto:oblissman@gmail.com" class="social-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email</a>
+  </div>
+  <div class="reveal" style="margin-top:40px;padding:18px 28px;background:rgba(0,212,255,.04);border:1px solid var(--border);border-radius:12px;display:inline-block">
+    <div style="font-size:12px;color:var(--muted)">WhatsApp</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--cyan);font-weight:500;margin-top:4px">+234 906 410 8238</div>
+  </div>
+</div>
+</div>
+
+<footer><p>© 2025 <span>Emperor Data Analytics</span> · Peter Fatolu · "Beyond Dashboards" Speaking Session</p></footer>
+
+<script>
+// Progress bar
+const progress = document.getElementById('progress');
+window.addEventListener('scroll',()=>{
+  const pct = window.scrollY/(document.body.scrollHeight-window.innerHeight)*100;
+  progress.style.width = pct+'%';
+});
+
+// Hero canvas particles
+const canvas = document.getElementById('hero-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+resize();
+window.addEventListener('resize',resize);
+class Particle{constructor(){this.reset();}reset(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.vx=(Math.random()-.5)*.4;this.vy=(Math.random()-.5)*.4;this.size=Math.random()*1.5+.5;this.alpha=Math.random()*.5+.1;this.color=Math.random()>.6?'#00D4FF':Math.random()>.5?'#7B2FBE':'#FFB800';}update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>canvas.width||this.y<0||this.y>canvas.height)this.reset();}draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fillStyle=this.color;ctx.globalAlpha=this.alpha;ctx.fill();ctx.globalAlpha=1;}}
+for(let i=0;i<120;i++)particles.push(new Particle());
+function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);particles.forEach(p=>{p.update();p.draw();});ctx.globalAlpha=.03;for(let i=0;i<particles.length;i++)for(let j=i+1;j<particles.length;j++){const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<100){ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.strokeStyle='#00D4FF';ctx.lineWidth=.5;ctx.stroke();}}ctx.globalAlpha=1;requestAnimationFrame(animate);}
+animate();
+
+// Scroll reveal
+const revealEls = document.querySelectorAll('.reveal,.reveal-left,.reveal-right');
+const observer = new IntersectionObserver((entries)=>{entries.forEach((e,i)=>{if(e.isIntersecting)setTimeout(()=>e.target.classList.add('visible'),i*80);});},{threshold:.1});
+revealEls.forEach(el=>observer.observe(el));
+
+// Animated bars
+const bars = document.querySelectorAll('.bar');
+const barObs = new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){bars.forEach(b=>{const h=b.style.height;b.style.height='0%';setTimeout(()=>b.style.height=h,200);});}});},{threshold:.5});
+if(bars.length>0)barObs.observe(bars[0]);
+</script>
+</body>
+</html>
